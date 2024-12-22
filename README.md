@@ -10,4 +10,5 @@ Welcome to this project repository! This application enables users to chat with 
 - **Secure and Scalable**: Ensures data privacy and supports scalability for handling multiple users.
 - **Hadith Collection**: Query and retrieve information from a comprehensive collection of Hadiths.
 
+<img width="854" alt="image" src="https://github.com/user-attachments/assets/dc938a59-8988-4506-94ff-506a15724891" />
 
