@@ -8,6 +8,7 @@ from langchain_core.output_parsers import StrOutputParser
 import ollama
 # from ollama import ChatModel
 from langchain_ollama.llms import OllamaLLM
+from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 
 modelname = 'llama2'
@@ -18,28 +19,19 @@ def init_database(user: str, password: str, host: str, port: str, database: str)
   return SQLDatabase.from_uri(db_uri)
 
 
+def read_file(file_path):
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            return file.read()
+    except FileNotFoundError:
+        raise FileNotFoundError(f"File not found: {file_path}")
+    except Exception as e:
+        raise Exception(f"An error occurred: {e}")
+
 def get_sql_chain(db):
-    template = """
-    You are a data analyst at a company. You are interacting with a user who is asking you questions about the company's database.
-    Based on the table schema below, write a SQL query that would answer the user's question. Take the conversation history into account.
+    template = read_file(r'.\prompt_template\sqlchain01a')
 
-    <SCHEMA>{schema}</SCHEMA>
-
-    Conversation History: {chat_history}
-
-    Write only the SQL query and nothing else. Do not wrap the SQL query in any other text, not even backticks.
-
-    For example:
-    Question: which 3 artists have the most tracks?
-    SQL Query: SELECT ArtistId, COUNT(*) as track_count FROM Track GROUP BY ArtistId ORDER BY track_count DESC LIMIT 3;
-    Question: Name 10 artists
-    SQL Query: SELECT Name FROM Artist LIMIT 10;
-
-    Your turn:
-
-    Question: {question}
-    SQL Query:
-    """
+    print("sql chain: "+str(len(template)))
 
     prompt = ChatPromptTemplate.from_template(template)
 
@@ -48,6 +40,7 @@ def get_sql_chain(db):
     # llm = OllamaLLM(model=modelname)
 
     def get_schema(_):
+        print(db.get_table_info())
         return db.get_table_info()
 
     return (
@@ -60,16 +53,9 @@ def get_sql_chain(db):
 
 def get_response(user_query: str, db: SQLDatabase, chat_history: list):
     sql_chain = get_sql_chain(db)
+    print(sql_chain)
 
-    template = """
-    You are a data analyst at a company. You are interacting with a user who is asking you questions about the company's database.
-    Based on the table schema below, question, sql query, and sql response, write a natural language response.
-    <SCHEMA>{schema}</SCHEMA>
-
-    Conversation History: {chat_history}
-    SQL Query: <SQL>{query}</SQL>
-    User question: {question}
-    SQL Response: {response}"""
+    template = read_file(r'.\prompt_template\fullchain01a')
 
     prompt = ChatPromptTemplate.from_template(template)
 
@@ -109,7 +95,7 @@ with st.sidebar:
     st.text_input("Port", value="3306", key="Port")
     st.text_input("User", value="root", key="User")
     st.text_input("Password", type="password", value="password", key="Password")
-    st.text_input("Database", value="chinook", key="Database")
+    st.text_input("Database", value="chat", key="Database")
 
     if st.button("Connect"):
         with st.spinner("Connecting to database..."):
